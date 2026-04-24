@@ -1,6 +1,8 @@
 package com.uma.example.springuma.integration;
 
 import static org.hamcrest.Matchers.hasSize;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -79,7 +81,49 @@ public class PacienteControllerMockMvcIT extends AbstractIntegration {
         crearPaciente(paciente);
 
         //Obtener paciente por ID
-        
+        mockMvc.perform(get("/paciente/" + paciente.getId()))
+                .andExpect(status().is2xxSuccessful())
+                .andExpect(jsonPath("$.nombre").value(paciente.getNombre()))
+                .andExpect(jsonPath("$.dni").value(paciente.getDni()));
+    }
+    @Test
+    @DisplayName("Editar paciente en el sistema")
+    void updatePaciente() throws Exception {
+        crearMedico(medico);
+        crearPaciente(paciente);
+
+        paciente.setNombre("Pepito");
+        mockMvc.perform(put("/paciente")
+                .contentType("application/json")
+                .content(objectMapper.writeValueAsString(paciente)))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/paciente/" + paciente.getId()))
+                .andExpect(status().is2xxSuccessful())
+                .andExpect(jsonPath("$.nombre").value("Pepito"))
+                .andExpect(jsonPath("$.dni").value(paciente.getDni()));
     }
 
+    @Test
+    @DisplayName("Obtener lista de pacientes de un médico")
+    void getPacientesByMedico() throws Exception {
+        crearMedico(medico);
+        crearPaciente(paciente);
+
+        mockMvc.perform(get("/paciente/medico/" + medico.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].nombre").value(paciente.getNombre()));
+    }
+
+    @Test
+    @DisplayName("Eliminar paciente")
+    void deletePaciente() throws Exception {
+        crearMedico(medico);
+        crearPaciente(paciente);
+
+        mockMvc.perform(delete("/paciente/" + paciente.getId()))
+                .andExpect(status().isOk());
+    }
 }
+
